@@ -40,7 +40,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                     @Override
                     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException, ServletException {
                         log.info("로그인 성공 아이디는 :"+authentication.getName());
-                        response.sendRedirect("/");
+                        response.sendRedirect("/loginPage");
 
                     }
                 })
@@ -51,9 +51,6 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                         response.sendRedirect("/login");
                     }
                 })
-
-
-
                 .permitAll()
         ;
 
