@@ -1,12 +1,14 @@
 package io.security.basicsecurity;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.security.web.authentication.logout.LogoutHandler;
@@ -24,6 +26,9 @@ import java.io.IOException;
 @Slf4j
 public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
+    @Autowired
+    UserDetailsService userDetailsService;
+
     @Override
     protected void configure(HttpSecurity http) throws Exception {
         http
@@ -35,11 +40,11 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 //        인증 정책
         http
                 .formLogin()    //폼 로그인 방식으로
-//                .loginPage("/loginPage")        //사용자 정의 로그인 페이지
+//                .loginPage("/login")        //사용자 정의 로그인 페이지
 //                .defaultSuccessUrl("/")         //로그인 성공 후 이동 페이지
 //                .failureUrl("/login")           //로그인 실패 후 이동 페이지
-                .usernameParameter("userId")    //파라메터 아이디 설정
-                .passwordParameter("passwd")    //파라메터 비밀번호 설정
+                .usernameParameter("user_id")    //파라메터 아이디 설정
+                .passwordParameter("user_pw")    //파라메터 비밀번호 설정
 //                .loginProcessingUrl("login_proc")   //로그인 폼 액션 url
                 .successHandler(new AuthenticationSuccessHandler() {
                     @Override
@@ -66,7 +71,8 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 //                .logoutSuccessUrl("/login")
                 .addLogoutHandler(new LogoutHandler() {
                     @Override
-                    public void logout(HttpServletRequest request, HttpServletResponse response, Authentication authentication) {
+                    public void logout(HttpServletRequest request,
+                                       HttpServletResponse response, Authentication authentication) {
                         HttpSession httpSession =request.getSession();
                         log.info("세션 무효화");
                         httpSession.invalidate();           //세션 무효화
@@ -74,14 +80,21 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 })
                 .logoutSuccessHandler(new LogoutSuccessHandler() {
                     @Override
-                    public void onLogoutSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException, ServletException {
+                    public void onLogoutSuccess(HttpServletRequest request,
+                                                HttpServletResponse response,
+                                                Authentication authentication) throws IOException, ServletException {
                         log.info("로그아웃 성공");
                         response.sendRedirect("/login");
                     }
                 })
-                .deleteCookies("remember-me")           //remember-me라는 쿠키를 삭제
-
+//                .deleteCookies("remember-me")           //remember-me 라는 쿠키를 삭제
         ;
-
+        http
+                .rememberMe()
+//                .rememberMeParameter("remember")    //기본 파라메터 명은 remember-me
+                .tokenValiditySeconds(3600)         //디폴트는 14일
+                .alwaysRemember(false)              //true로 리멤버 미 기능이 활성화되지 않아도 항상 실행
+                .userDetailsService(userDetailsService)   //리멤버 미 기능을 수행할때 시스템에 있는 사용자 계정을 조회할때씀
+                ;
     }
 }
