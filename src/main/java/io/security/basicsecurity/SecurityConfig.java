@@ -98,7 +98,10 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 ;
         http.sessionManagement()
                 .maximumSessions(1)     //동시 생성가능 세션 수 -1은 무제한
-                .maxSessionsPreventsLogin(true)     //동시 로그인 차단, false 가 디폴트
+//                동시 로그인 차단하게되면 로그아웃할때 세션 무효화지 삭제가 아니라
+//                세션이 무효화 되었어도 사라지지 않아서 세션1개 있다고 로그인 안됨
+//                false 로하면 로그인돼서 걍 false 로
+                .maxSessionsPreventsLogin(false)     //동시 로그인 차단(true), false 가 디폴트+이전 세션 만료
                 .expiredUrl("/expired")             //세션이 만료된 경우 이동 할 페이지
                 .and()                              //이걸 해야 invalid뜸
                 .invalidSessionUrl("/login")      //세션이 유효하지 않을 때 이동 할 페이지 로그인했는데 또 로그인 시도하면 가게 되는 경로라고봄
@@ -108,4 +111,5 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)   //디폴트 스크링 시큐리티가 필요시 사용, Always 스프링 시큐리티가 항상
                 ;
     }
+
 }
