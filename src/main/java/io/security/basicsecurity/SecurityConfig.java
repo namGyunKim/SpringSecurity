@@ -3,6 +3,7 @@ package io.security.basicsecurity;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
@@ -27,15 +28,39 @@ import java.io.IOException;
 @Slf4j
 public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
-    @Autowired
     UserDetailsService userDetailsService;
+
+    public SecurityConfig(UserDetailsService userDetailsService) {
+        this.userDetailsService = userDetailsService;
+    }
+
+
+    /**
+     * 아이디 비밀번호 임의로 설정
+     * @param auth the {@link AuthenticationManagerBuilder} to use
+     * @throws Exception
+     */
+    @Override
+    protected void configure(AuthenticationManagerBuilder auth) throws Exception {
+//        아이디에 대한 패스워드 유형 prefix 패스워드 암호화 방식을 앞에 붙여줘야함 (noop 암호화 안한다는거)
+        auth.inMemoryAuthentication().withUser("user").password("{noop}1111").roles("USER");
+        auth.inMemoryAuthentication().withUser("sys").password("{noop}1111").roles("SYS","USER");
+        auth.inMemoryAuthentication().withUser("admin").password("{noop}1111").roles("ADMIN","SYS","USER");
+    }
 
     @Override
     protected void configure(HttpSecurity http) throws Exception {
 //        인가 정책
 
-        http.authorizeRequests()            //요청에 대한 권한을 지정
-                .anyRequest().authenticated()  //인증이 되어야 접근가능
+
+        /**
+         * 인가 정책 위에 줄 부터 실행되기 때문에 admin/pay의 경우 위에서 ADMIN이 아니면 바로 막힘
+         */
+        http.authorizeRequests()//요청에 대한 권한을 지정
+                .antMatchers("/user").hasRole("USER")
+                .antMatchers("/admin/pay").hasRole("ADMIN")
+                .antMatchers("/admin/**").access("hasRole('ADMIN') or hasRole('SYS')")
+                .anyRequest().authenticated()  //인가 정책을 통과해 인증이 되어야 접근가능
                 .and()                      //and를 해야 어나니머스가 보임
                 .anonymous().disable()      //익명사용자 사용 안함
         ;
