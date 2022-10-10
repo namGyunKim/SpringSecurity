@@ -67,6 +67,9 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .antMatchers("/user").hasRole("USER")
                 .antMatchers("/admin/pay").hasRole("ADMIN")
                 .antMatchers("/admin/**").access("hasRole('ADMIN') or hasRole('SYS')")
+                /**
+                 * anyRequest().authenticated() 때문에 이상한페이지 눌러도 login 페이지로 가짐
+                 */
                 .anyRequest().authenticated()  //인가 정책을 통과해 인증이 되어야 접근가능
                 .and()                      //and를 해야 어나니머스가 보임
                 .anonymous().disable()      //익명사용자 사용 안함
