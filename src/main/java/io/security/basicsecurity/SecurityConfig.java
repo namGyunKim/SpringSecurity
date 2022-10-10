@@ -172,12 +172,16 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
         http
                 .exceptionHandling()
                 //인증 예외
-                /*.authenticationEntryPoint(new AuthenticationEntryPoint() {
+                /**
+                 * 이거넣으면 logout이나 login 시큐리티 기본껄로 안가짐
+                 * 왜 무한루프가 되는지 모르겠음
+                 */
+/*                .authenticationEntryPoint(new AuthenticationEntryPoint() {
                     @Override
                     public void commence(HttpServletRequest request, HttpServletResponse response, AuthenticationException authException) throws IOException, ServletException {
 //                        스프링 시큐리티의 login이 아닌 우리가 직접 만든 login 페이지로 감
                         log.info("앤트리포인트 발생");
-                        response.sendRedirect("/login");
+                        response.sendRedirect("/");
                     }
                 })*/
 //                인가 예외
