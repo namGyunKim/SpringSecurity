@@ -3,6 +3,7 @@ package io.security.basicsecurity;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -11,10 +12,15 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.web.AuthenticationEntryPoint;
+import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.security.web.authentication.logout.LogoutHandler;
 import org.springframework.security.web.authentication.logout.LogoutSuccessHandler;
+import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
+import org.springframework.security.web.savedrequest.RequestCache;
+import org.springframework.security.web.savedrequest.SavedRequest;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -57,6 +63,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
          * 인가 정책 위에 줄 부터 실행되기 때문에 admin/pay의 경우 위에서 ADMIN이 아니면 바로 막힘
          */
         http.authorizeRequests()//요청에 대한 권한을 지정
+                .antMatchers("/login").permitAll()
                 .antMatchers("/user").hasRole("USER")
                 .antMatchers("/admin/pay").hasRole("ADMIN")
                 .antMatchers("/admin/**").access("hasRole('ADMIN') or hasRole('SYS')")
@@ -77,7 +84,23 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                     @Override
                     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException, ServletException {
                         log.info("로그인 성공 아이디는 :"+authentication.getName());
-                        response.sendRedirect("/loginPage");
+                        /**
+                         * 인증실패해서 로그인 페이지 가서 로그인 했을때 원래 가고자 했던곳 보내기
+                         * 인증가 정책에 의해서 권한이 필요한곳에 갔을때만 돼고 바로 인증필요없는 login으로가면
+                         * savedRequest에는 null이 담겨있게됨
+                         */
+                        RequestCache requestCache = new HttpSessionRequestCache();
+                        SavedRequest savedRequest = requestCache.getRequest(request,response);
+                        /**
+                         * 세션에 저장돼 있던 사용자가 원래 가고자 했던 경로
+                         */
+                        String redirectUrl="";
+                        if (savedRequest ==null){
+                            redirectUrl="/";
+                        }else {
+                            redirectUrl=savedRequest.getRedirectUrl();
+                        }
+                        response.sendRedirect(redirectUrl);
 
                     }
                 })
@@ -115,12 +138,18 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 })
 //                .deleteCookies("remember-me")           //remember-me 라는 쿠키를 삭제
         ;
+        /**
+         * 자동로그인 리멤버 미
+         */
         http.rememberMe()
                 .rememberMeParameter("remember")    //기본 파라메터 명은 remember-me
                 .tokenValiditySeconds(3600)         //디폴트는 14일
                 .alwaysRemember(false)              //true로 리멤버 미 기능이 활성화되지 않아도 항상 실행
                 .userDetailsService(userDetailsService)   //리멤버 미 기능을 수행할때 시스템에 있는 사용자 계정을 조회할때씀
                 ;
+        /**
+         * 세션 관리
+         */
         http.sessionManagement()
                 .maximumSessions(1)     //동시 생성가능 세션 수 -1은 무제한
 //                동시 로그인 차단하게되면 로그아웃할때 세션 무효화지 삭제가 아니라
@@ -135,6 +164,30 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 //                .sessionFixation().migrateSession()
                 .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)   //디폴트 스크링 시큐리티가 필요시 사용, Always 스프링 시큐리티가 항상
                 ;
+
+        /**
+         * 인증 인가 예외 처리
+         * 위의 로그인 석세스 핸들러랑 같이봐야됨
+         */
+        http
+                .exceptionHandling()
+                //인증 예외
+                /*.authenticationEntryPoint(new AuthenticationEntryPoint() {
+                    @Override
+                    public void commence(HttpServletRequest request, HttpServletResponse response, AuthenticationException authException) throws IOException, ServletException {
+//                        스프링 시큐리티의 login이 아닌 우리가 직접 만든 login 페이지로 감
+                        log.info("앤트리포인트 발생");
+                        response.sendRedirect("/login");
+                    }
+                })*/
+//                인가 예외
+                .accessDeniedHandler(new AccessDeniedHandler() {
+                    @Override
+                    public void handle(HttpServletRequest request, HttpServletResponse response, AccessDeniedException accessDeniedException) throws IOException, ServletException {
+                        log.info("액세스 디나이 핸들러 발생");
+                        response.sendRedirect("/denied");
+                    }
+                });
     }
 
 }
