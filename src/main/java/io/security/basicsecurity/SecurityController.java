@@ -1,5 +1,8 @@
 package io.security.basicsecurity;
 
+import org.json.JSONObject;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -8,6 +11,7 @@ public class SecurityController {
 
     @GetMapping("/")
     public String index(){
+
         return "home";
     }
 
@@ -35,5 +39,13 @@ public class SecurityController {
     @GetMapping("/denied")
     public String denied(){
         return "Access is denied";
+    }
+    @GetMapping("/userInfo")
+    public String  userInfo(Authentication authentication){
+        JSONObject jsonObject = new JSONObject();
+        jsonObject.put("id", authentication.getName());
+        jsonObject.put("auth", authentication.getAuthorities());
+        System.out.println("제이슨 데이터 :"+jsonObject);
+        return jsonObject.toString();
     }
 }
