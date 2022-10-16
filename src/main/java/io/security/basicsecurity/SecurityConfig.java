@@ -196,6 +196,10 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                         response.sendRedirect("/denied");
                     }
                 });
+        /**
+         * csrf필터 비활성화
+         */
+        http.csrf().disable();
     }
 
 }
